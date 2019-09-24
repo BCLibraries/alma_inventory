@@ -4,10 +4,12 @@
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css">
-    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.0/jquery.min.js"></script>
-    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/js/bootstrap.min.js"></script>
-    <script type="text/javascript" src="../inventory/reformed/js/jquery.tablesorter.js"></script>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
+    <title>Alma Shelf Inventory</title>
+    <!--<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.0/jquery.min.js"></script>-->
+    <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js" integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo" crossorigin="anonymous"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js" integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM" crossorigin="anonymous"></script>
+    <script type="text/javascript" src="jquery.tablesorter.js"></script>
 <script type="text/javascript">
     $(document).ready(function()
     {
@@ -15,29 +17,32 @@
     }
 );
 </script>
-
-    <style type="text/css">
-        body {
-            font: 12px/14px Arial;
-        }
-
-        div.submit-form {
-            width: 550px;
-            margin: 5px auto;
-        }
-    </style>
 </head>
 <body>
-  <div class="container">
-
+<div class="container">
+    <div id="progress-section">  
+        <div class="container">
+            <div class="row">
+                <div class="col-md-12">
+                    <p>&nbsp;</p>
+                    <p>&nbsp;</p>
+                    <div id="progress-bar" style="border:1px solid #ccc; border-radius: 5px; "></div>
+                    <!-- Progress information -->
+                    <br>
+                    <div id="information" ></div>
+                </div>
+            </div>
+        </div>
 <?php
-
+ini_set('max_execution_time', 0);
+//session_start();
 //pre($_POST);
 //Include XLSX Reader
 include 'simplexlsx/simplexlsx.class.php';
 
 //Ensure Authentication and load API Keys
-require("login.php");
+//Uncomment line below to enable authentication after setting up login.php properly
+//require("login.php");
 require("SortCallNumber.php");
 require("almaBarcodeAPI.php");
 
@@ -50,7 +55,7 @@ $nipProblem = '';
 $tempProblem = '';
 $libraryProblem = '';
 $locationProblem = '';
-$policyProblem = '';
+//$policyProblem = '';
 $typeProblem = '';
 $orderProblemCount = 0;
 $cnTypeProblemCount = 0;
@@ -58,7 +63,7 @@ $tempProblemCount = 0;
 $requestProblemCount = 0;
 $locationProblemCount = 0;
 $libraryProblemCount = 0;
-$policyProblemCount = 0;
+//$policyProblemCount = 0;
 $typeProblemCount = 0;
 
 //Only run code below if form submitted
@@ -66,25 +71,22 @@ if (isset($_POST['submit'])) {
   //View Post Data Submitted
   //pre($_POST);
 	//Clear cache directory if requested
-    if ($_POST['clearCache'] == 'true') {	
+    if ($_POST['clearCache'] == 'true') {
 		foreach(glob("cache/barcodes/*") as $file)
 		{
 				unlink($file);
 		}
    	}
     if (isset($_FILES["file"])) {
-
         //if there was an error uploading the file
         if ($_FILES["file"]["error"] > 0) {
             echo "Return Code: " . $_FILES["file"]["error"] . "<br />";
-
         } else {
             //Print file details
             // echo "Upload: " . $_FILES["file"]["name"] . "<br />";
             // echo "Type: " . $_FILES["file"]["type"] . "<br />";
             // echo "Size: " . ($_FILES["file"]["size"] / 1024) . " Kb<br />";
             // echo "Temp file: " . $_FILES["file"]["tmp_name"] . "<br />";
-
             //if file already exists
             if (file_exists("cache/upload/" . $_FILES["file"]["name"])) {
                 //echo $_FILES["file"]["name"] . " already exists. ";
@@ -97,31 +99,28 @@ if (isset($_POST['submit'])) {
         }
     } else {
         echo '<H1>Barcode.xlsx file not selected.</H1><BR>';
-        echo '<a href=' . 'https://' . $_SERVER['HTTP_HOST'] . dirname($_SERVER['PHP_SELF']) . '/index.php' . '> Run New File</a><BR>';
+        echo '<a href=' . 'http://' . $_SERVER['HTTP_HOST'] . dirname($_SERVER['PHP_SELF']) . '/index.php' . '> Run New File</a><BR>';
         exit();
     }
-
+    /*
     //Check Call # type need to implement other types
     if (isset($_POST['cnType']) && $_POST['cnType'] == 'other') {
-        echo '<H1>Currently only Dewey and LC callnumber type supported.</H1><BR>';
-        echo '<a href=' . 'https://' . $_SERVER['HTTP_HOST'] . dirname($_SERVER['PHP_SELF']) . '/index.php' . '> Run New File</a><BR>';
+        echo '<H1>Currently only Dewey and LC call number type supported.</H1><BR>';
+        echo '<a href=' . 'http://' . $_SERVER['HTTP_HOST'] . dirname($_SERVER['PHP_SELF']) . '/index.php' . '> Run New File</a><BR>';
         exit();
-    }
-
-
+    } */
     if (file_exists("cache/upload/" . $storagename)) {
       $filelocation = "cache/upload/" . $storagename;
       $xlsx = new SimpleXLSX($filelocation);
       list($num_cols, $num_rows) = $xlsx->dimension();
-
         //load callNumber array and sort for printing below
         //Rows in sheet 1
         $row=1;
         foreach( $xlsx->rows() as $k => $r ) {
           // Start the session when using it. Not before or out of the loop. Remember that you are only using it to store the % of progress.
-           session_start();
+           //session_start();
             //Skip First row
-            if ($k == 0) {
+            /*if ($k == 0) {
               //Check that first cell is header "barcodes"
               if($r[0] == 'barcodes')
               {
@@ -131,7 +130,7 @@ if (isset($_POST['submit'])) {
                 echo "Upload file must have header row labeled barcodes";
                 exit;
               }
-            }
+            }*/
                 //only need first column from Excel sheet, so hard coding 0 for column #
                 $barcode = $r[0];
                 //echo($barcode);
@@ -157,6 +156,7 @@ if (isset($_POST['submit'])) {
                 $item_obj->item_note3 = (string)$xml_barcode_result->item_data->internal_note_3;
                 $item_obj->requested = (string)$xml_barcode_result->item_data->requested;
                 $item_obj->policy = (string)$xml_barcode_result->item_data->policy;
+                //$item_obj->accession_number = (string)$xml_barcode_result->holding_data->accession_number
                 */
                 $itemData = retrieveBarcodeInfo($barcode);
 
@@ -166,11 +166,16 @@ if (isset($_POST['submit'])) {
                   $itemData->item_barcode = $barcode;
                   $itemData->title = 'NOT FOUND';
                   $itemData->call_sort = '!';
-
-
                 }
-                else {
+                else {  
                   //Barcode was found so we can store a normalized call number to use for sorting
+                  
+                  //Need to remove "DVD " prefix prior to sorting if DVD
+                  if (isset($_POST['itemType']) && $_POST['itemType'] == 'DVD') {  
+                    // Remove any inital "DVD " prior to sorting
+                    $itemData->call_number = preg_replace("/^DVD\s*/", "", $itemData->call_number);
+                  }
+
                   //if call_number_type == 1 it should be dewey
                   if($itemData->call_number_type == 1)
                   {
@@ -179,19 +184,23 @@ if (isset($_POST['submit'])) {
                   else {
                     $itemData->call_sort = normalizeLC($itemData->call_number);
                   }
-
                 }
                 //For (dubugging) view item info
                 //pre($itemData);
                 //store to array for sorting
                 $unsorted[$row] = $itemData;
                 $unsorted[$row]->scan_loc = $row;
-
                 $row= $row+1;
-
                 $percentage = round($row * 100 / $num_rows); // determine the % of completion / load
                 //THIS is the most important part. This function will close the session writting. Why? Because if the script loop is still running, the $_SESSION will be unaccesible and you have to wait till it ends to access it.
-                $_SESSION['percentage'] = $percentage;
+                echo '<script>
+                parent.document.getElementById("progress-bar").innerHTML="<div style=\"width:'.$percentage.'%;background:linear-gradient(to bottom, rgba(125,126,125,1) 0%,rgba(14,14,14,1) 100%); ;height:35px;\">&nbsp;</div>";
+                parent.document.getElementById("information").innerHTML="<div style=\"text-align:center; font-weight:bold\">'.$percentage.' % processed.</div>";</script>';
+
+                ob_flush(); 
+                flush(); 
+                
+                /*$_SESSION['percentage'] = $percentage;
                 $_SESSION['job'] = "Retrieving Barcodes From API";
                 if ($percentage == 100)
                 {
@@ -199,10 +208,15 @@ if (isset($_POST['submit'])) {
                   $_SESSION['percentage'] = 0;
                 }
 
-     session_write_close();
+        session_write_close();*/
         }
+        echo '<script>
+        parent.document.getElementById("progress-section").innerHTML="<div style=\"display:none;</div>";
+        </script>';
+        //session_destroy(); 
+
         //pre($unsorted);
-        //This converts arroy of stdClass objects to a mutlidimensional
+        //This converts array of stdClass objects to a mutlidimensional
         //array so we can sort using array sort
         $unsortedArray = json_decode(json_encode($unsorted), true);
         //pre($unsortedArray);
@@ -211,25 +225,24 @@ if (isset($_POST['submit'])) {
         $first_call = $first['call_number'];
         //remove spaces and periods
         $first_call = strtr($first_call, array('.' => '', ' ' => ''));
-
         $last_call = $last['call_number'];
         $last_call = strtr($last_call, array('.' => '', ' ' => ''));
 
         //var_dump($first, $last, $first_call, $last_call);
 
         //Sort array and maintain original scan key order
-        //Useful for caluculating difference between proper location and scan location
+        //Useful for calculating difference between proper location and scan location
         $sortednk = $unsortedArray;
         //pre($sortednk);
 
         if ($_POST['cnType'] == 'dewey') {
           $sortednk_success = usort($sortednk, "SortDeweyObject");
-      }
-   else {
-      $sortednk_success = usort($sortednk, "SortLCObject"); //sort by LC Call Number
-      }
+        }
+        else {
+            $sortednk_success = usort($sortednk, "SortLCObject"); //sort by LC Call Number
+        }
 
-        //Sort without maintainin key order.  Just keeping for reference.
+        //Sort without maintaining key order.  Just keeping for reference.
         //$sortedkey = $unsortedArray;
         //$sortedkey_success = uasort($sortedkey, "SortLCObject");
 
@@ -253,9 +266,7 @@ if (isset($_POST['submit'])) {
                 $nextScan_loc = $sortednk[$key + 1]['scan_loc'] + 1;
                 $nextdiff = $nextScan_loc - $scan_loc;
                 $prevdiff = $scan_loc - $prevScan_loc;
-
                 if ($prevdiff != 1 && $nextdiff != 1) {
-
                     //Next two if statements take care of undefined offset issue
                     if (!isset($unsortedArray[$sortednk[$key]['scan_loc'] - 1])) {
                         $unsortedArray[$sortednk[$key]['scan_loc'] - 1] = null;
@@ -263,7 +274,6 @@ if (isset($_POST['submit'])) {
                     if (!isset($unsortedArray[$sortednk[$key]['scan_loc'] + 1])) {
                         $unsortedArray[$sortednk[$key]['scan_loc'] + 1] = null;
                     }
-
                     $move = $prevScan_loc - $scan_loc;
                     $prevScan_loc = 0;
                     $scan_loc = 0;
@@ -277,13 +287,10 @@ if (isset($_POST['submit'])) {
                     $orderProblem = "**OUT OF ORDER**<BR>Item Currently Between:<BR><em>" . $unsortedArray[$sortednk[$key]['scan_loc'] - 1]['call_number'] . "</em> & <em>" . $unsortedArray[$sortednk[$key]['scan_loc'] + 1]['call_number'] . "</em><BR>" . $move . "<BR>";
                     $orderProblemCount += 1;
                     $problem = true;
-
-
                 } else {
                     $orderProblem = '';
                 }
             }
-
             //Don't flag other issues if only order problems are requested
             if ($_POST['onlyorder'] == 'false') {
                 if ($_POST['cnType'] == 'dewey'){
@@ -298,14 +305,12 @@ if (isset($_POST['submit'])) {
                 } else {
                     $cnTypeProblem = '';
                 }
-
                 if ($sortednk[$key]['status'] != 1) {
                     $nipProblem = "**NIP: " . $sortednk[$key]['process_type'] . "**<BR>";
                     $problem = true;
                 } else {
                     $nipProblem = '';
                 }
-
                 if ($sortednk[$key]['in_temp_location'] != 'false') {
                     $tempProblem = "**IN TEMP LOC**<BR>";
                     $tempProblemCount += 1;
@@ -313,7 +318,6 @@ if (isset($_POST['submit'])) {
                 } else {
                     $tempProblem = '';
                 }
-
                 if ($sortednk[$key]['requested'] != 'false') {
                     $requestProblem = "**ITEM HAS REQUEST**<BR>";
                     $requestProblemCount +=1;
@@ -321,7 +325,6 @@ if (isset($_POST['submit'])) {
                 } else {
                     $requestProblem = '';
                 }
-
                 $location = $_POST['location'];
                 if ($sortednk[$key]['location'] != $location) {
                     $locationProblem = "**WRONG LOCATION: " . $sortednk[$key]['location'] . "**<BR>";
@@ -338,8 +341,7 @@ if (isset($_POST['submit'])) {
                 } else {
                     $libraryProblem = '';
                 }
-
-                $policy = $_POST['policy'];
+                /*$policy = $_POST['policy'];
                 if ($sortednk[$key]['policy'] != $policy) {
                     if ($sortednk[$key]['policy'] != '') {
                         $policyProblem = "**WRONG ITEM POLICY: " . $sortednk[$key]['policy'] . "**<BR>";
@@ -351,15 +353,14 @@ if (isset($_POST['submit'])) {
                     $problem = true;
                 } else {
                     $policyProblem = '';
-                }
-
+                }*/
                 $type = $_POST['itemType'];
                 if ($sortednk[$key]['physical_material_type'] != $type) {
                     if ($sortednk[$key]['physical_material_type'] != '') {
                         $typeProblem = "**WRONG TYPE: " . $sortednk[$key]['physical_material_type'] . "**<BR>";
                         $typeProblemCount +=1;
                     } else {
-                        $typeProblem = "**BLANK I TYPE**<BR>";
+                        $typeProblem = "**BLANK ITEM TYPE**<BR>";
                         $typeProblemCount +=1;
                     }
                     $problem = true;
@@ -367,10 +368,8 @@ if (isset($_POST['submit'])) {
                     $typeProblem = '';
                 }
             }
-
             $scan_loc = $sortednk[$key]['scan_loc'];
             $correct_loc = $key + 1;
-
             //If row has a problem print in Bold and output problems to an output
             //array that way we can re-sort output array if desired
             $shelflist_obj = new stdClass();
@@ -379,7 +378,8 @@ if (isset($_POST['submit'])) {
             $shelflist_obj->norm_call_number = $sortednk[$key]['call_sort'];
             $shelflist_obj->title = utf8_encode (substr($sortednk[$key]['title'], 0, 20) . '...');
             $shelflist_obj->scanned_location = $scan_loc;
-            $shelflist_obj->problem_list = $orderProblem . $cnTypeProblem . $nipProblem . $tempProblem . $libraryProblem . $locationProblem . $policyProblem . $typeProblem;
+            //removed $policyProblem
+            $shelflist_obj->problem_list = $orderProblem . $cnTypeProblem . $nipProblem . $tempProblem . $libraryProblem . $locationProblem . $typeProblem;
             $shelflist_obj->barcode = $sortednk[$key]['item_barcode'];
             $shelflist_obj->problem = $problem;
           	//Add this loation to the array of locations using the unique location code as the index value
@@ -387,21 +387,19 @@ if (isset($_POST['submit'])) {
             //array so we can sort using array sort
             $shelflist[trim($key)] = json_decode(json_encode($shelflist_obj), true);
             //pre($shelflist);
-
-            // Calculate the percentation
+            // Calculate the percentage
             //$_SESSION['progress'] = intval($key/$num_rows * 100);
-
         }
         //write out page header info
         echo "<div class='page-header'>";
-          echo "  <h1>ShelfList <small>". $_POST['library'] . ':' . $_POST['location'] . ' Range:' . substr($first_call, 0, 4) . '-' . substr($last_call, 0, 4) .' Run Date:'. date('Ymd') ."</small></h1>";
+          echo "  <h1>Shelf Inventory Report</h1><h2>". $_POST['library'] . ':' . $_POST['location'] . ' Range:' . substr($first_call, 0, 4) . '-' . substr($last_call, 0, 4) .' Run Date:'. date('Ymd') ."</h2>";
         echo "</div>";
         echo "<p class='lead'>";
-          echo "Upload file contains ". ($num_rows - 1) . " barcodes.";
+          echo "Upload file contains ". ($num_rows - 1) . " barcodes";
         echo "</p>";
         echo "<div class='row'>";
         $csv_output_filename = 'ShelfList_' . $_POST['library'] . '_' . $_POST['location'] . '_' . substr($first_call, 0, 4) . '_' . substr($last_call, 0, 4) . '_' . date('Ymd') . '.csv';
-          echo "<div class='col-md-4'><a href=" . "https://" . $_SERVER['HTTP_HOST'] . dirname($_SERVER['PHP_SELF']) . "/index.php" . "> Run New File</a></div> <div class='col-md-4'><a href=cache/output/" . $csv_output_filename . ">Download File: " . $csv_output_filename . "</a></div>";
+          echo "<div class='col-md-6'><a href=" . "http://" . $_SERVER['HTTP_HOST'] . dirname($_SERVER['PHP_SELF']) . "/index.php" . "> Run New File</a></div> <div class='col-md-6'><a href=cache/output/" . $csv_output_filename . ">Download File: " . $csv_output_filename . "</a></div>";
         echo "</div>";
         echo "<table style='width: auto;' class='table table-hover table-bordered table-condensed'><tr><td>";
         echo '<B>' . $orderProblemCount . '</b> Order Problems Found</td>';
@@ -410,25 +408,19 @@ if (isset($_POST['submit'])) {
         echo '<td>' . $requestProblemCount . '</b> Item on Request Problems Found</td></tr>';
         echo '<tr><td>' . $locationProblemCount . '</b> Wrong Location Problems Found</td>';
         echo '<td>' . $libraryProblemCount . '</b> Wrong Library Problems Found</td>';
-        echo '<td>' . $policyProblemCount . '</b> Item Policy Problems Found</td>';
+        //echo '<td>' . $policyProblemCount . '</b> Item Policy Problems Found</td>';
         echo '<td>' . $typeProblemCount . '</b> Item Type Problems Found</td></tr>';
         echo '<tr><td>First call number scanned: <B>' . $first_call . '</b></td>';
         echo '<td>Last call number scanned: <B>' . $last_call . '</b></td></tr></table>';
-
-
         //pre($output_array);
         outputRecords($shelflist);
     }
-
-
 } else {
     echo "No data received.";
 }
-
 function pre($data) {
     print '<pre>' . print_r($data, true) . '</pre>';
 }
-
 function outputRecords($output){
   //Use global to allow use inside of function
   global $csv_output_filename;
@@ -442,14 +434,11 @@ function outputRecords($output){
   }
 
 // open the csv file for writing
-
   $csv_file = fopen('cache/output/' . $csv_output_filename, 'w');
-
 // save the CSV column headers
   fputcsv($csv_file, array('Correct_Position', 'Call_Number', 'norm_call_number','Title', 'Position Scanned', 'Problem', 'Barcode'));
-
   echo "<table id='CNTable' style='width: auto;' class='table table-hover table-striped table-bordered table-condensed tablesorter'>";
-  echo "<thead>";
+  echo "<thead class='thead-dark'>";
   echo "<tr>";
   echo "<th>Correct<BR>Order</th>";
   echo "<th>Correct CN Order</th>";
@@ -468,16 +457,14 @@ function outputRecords($output){
     }
     //Highlight problem rows using bootstrap contextual class
   if ($output[$key]['problem'] == 1) {
-    echo "<tr class='danger' style='font-weight:bold'>";
+    echo "<tr class='table-danger' style='font-weight:bold'>";
   }
   else {
     echo "<tr>";
   }
-
-
           echo "<td>" . $output[$key]['correct_location'] . "</td>";
           echo "<td>" . $output[$key]['call_number'] . "</td>";
-          //          echo "<td>" . $output[$key]['norm_call_number'] . "</td>";
+          //echo "<td>" . $output[$key]['norm_call_number'] . "</td>";
           echo "<td>" . $output[$key]['title'] . "</td>";
           echo "<td>" . $output[$key]['scanned_location']  . "</td>";
           echo "<td>" . $output[$key]['problem_list'] . "</td>";
@@ -490,7 +477,6 @@ function outputRecords($output){
           $problems = preg_replace('#(<em */?>\s*)+#i', '', $problems);
           $problems = preg_replace('#(</em */?>\s*)+#i', '', $problems);
           fputcsv($csv_file, array($output[$key]['correct_location'], $output[$key]['call_number'], $output[$key]['norm_call_number'], $output[$key]['title'], $output[$key]['scanned_location'],$problems,"=\"" . $output[$key]['barcode'] ."\"" ));
-
   }
   echo "</tbody>";
   echo "</table>";
